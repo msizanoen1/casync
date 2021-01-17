@@ -4375,6 +4375,8 @@ static int ca_decoder_step_node(CaDecoder *d, CaDecoderNode *n) {
         return 0;
 }
 
+static uint64_t disk_write_total = 0;
+
 static int ca_decoder_advance_buffer(CaDecoder *d, CaDecoderNode *n) {
         int r;
 
@@ -4409,6 +4411,8 @@ static int ca_decoder_advance_buffer(CaDecoder *d, CaDecoderNode *n) {
                                 if (r < 0)
                                         return r;
                         }
+			disk_write_total += d->step_size;
+			printf("disk_write_total:%" PRIu64 "\n", disk_write_total);
                 }
 
                 if (d->reflink) {

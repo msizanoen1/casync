@@ -2285,6 +2285,9 @@ int ca_encoder_step(CaEncoder *e) {
         return ca_encoder_step_node(e, n);
 }
 
+static int qin_counter = 0;
+static bool qin_enable = true;
+
 static int ca_encoder_get_payload_data(CaEncoder *e, CaEncoderNode *n, uint64_t suggested_size) {
         uint64_t size;
         ssize_t m;
@@ -2303,8 +2306,17 @@ static int ca_encoder_get_payload_data(CaEncoder *e, CaEncoderNode *n, uint64_t 
         if (r < 0)
                 return r;
 
-        if (e->payload_offset >= size) /* at EOF? */
+        if (qin_enable && e->payload_offset >= size) {
+		printf("disk_read_finish\n");
+		qin_enable = false;
+		/* at EOF? */
                 return 0;
+	}
+
+	if (qin_enable && ++qin_counter == 1024) {
+		qin_counter = 0;
+		printf("disk_read_process:%" PRIu64 ":%" PRIu64 "\n", e->payload_offset, size);
+	}
 
         k = (size_t) MIN(BUFFER_SIZE, size - e->payload_offset);
         if (suggested_size != UINT64_MAX && k > suggested_size)
@@ -2323,6 +2335,11 @@ static int ca_encoder_get_payload_data(CaEncoder *e, CaEncoderNode *n, uint64_t 
                 r = -EIO;
                 goto fail;
         }
+
+	if (qin_enable && size - e->payload_offset == k) {
+		printf("disk_read_finish\n");
+		qin_enable = false;
+	}
 
         return 1;
 

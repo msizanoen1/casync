@@ -1086,6 +1086,8 @@ static int ca_remote_start(CaRemote *rr) {
         return CA_REMOTE_POLL;
 }
 
+static ssize_t ca_remote_read_total = 0;
+
 static int ca_remote_read(CaRemote *rr) {
         size_t left, rsize;
         ssize_t n;
@@ -1110,6 +1112,10 @@ static int ca_remote_read(CaRemote *rr) {
                 return errno == EAGAIN ? CA_REMOTE_POLL : -errno;
         if (n == 0) /* EOF */
                 return -EPIPE;
+
+	ca_remote_read_total += n;
+
+	printf("remote_read_total:%ji\n", (intmax_t)ca_remote_read_total);
 
         return CA_REMOTE_STEP;
 }
